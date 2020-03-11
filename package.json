@@ -1,0 +1,40 @@
+{
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "eject": "expo eject"
+  },
+  "dependencies": {
+    "@freakycoder/react-native-header-view": "^0.4.13",
+    "@nvthai/react-native-swipe-list-view": "^1.5.16",
+    "@react-navigation/drawer": "^5.1.1",
+    "@react-navigation/material-top-tabs": "^5.1.1",
+    "@react-navigation/native": "^5.0.9",
+    "@types/react-native-snap-carousel": "^3.7.4",
+    "expo": "~36.0.0",
+    "react": "~16.9.0",
+    "react-dom": "~16.9.0",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-36.0.0.tar.gz",
+    "react-native-datepicker": "^1.7.2",
+    "react-native-elements": "^1.2.7",
+    "react-native-gesture-handler": "^1.6.0",
+    "react-native-paper": "^3.6.0",
+    "react-native-progress-steps": "^1.2.8",
+    "react-native-reanimated": "^1.7.0",
+    "react-native-safe-area-context": "^0.7.3",
+    "react-native-screens": "^2.2.0",
+    "react-native-snap-carousel": "^3.8.4",
+    "react-native-tab-view": "^2.13.0",
+    "react-native-vector-icons": "^6.6.0",
+    "react-native-web": "~0.11.7",
+    "rn-modal-picker": "^0.2.9"
+  },
+  "devDependencies": {
+    "babel-preset-expo": "~8.0.0",
+    "@babel/core": "^7.0.0"
+  },
+  "private": true
+}
