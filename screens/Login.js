@@ -18,6 +18,8 @@ import {
   } from 'react-native';
   import React from 'react';
   import { Button, TextInput } from 'react-native-paper';
+  import IIcon from 'react-native-vector-icons/FontAwesome';
+//import { Icon } from 'react-native-paper/lib/typescript/src/components/Avatar/Avatar';
  
   class Account extends React.Component {
     constructor(props) {
@@ -34,7 +36,8 @@ import {
         newMailAdress:'',
         newTelephoneNumber:'',
         newPersonalName:'',
-        newPersonalSurname:''
+        newPersonalSurname:'',
+        backgroundDisplay:355
       };
     }
  
@@ -130,29 +133,24 @@ import {
       return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
           <View style={{ width: '100%', height: '100%', position: 'absolute' }}>
-            <Image
+            <View
               style={{
                 width: '100%',
                 height: '100%',
+                backgroundColor:'#266390',
               }}
-              resizeMethod={'scale'}
-              source={{
-                uri: 'https://www.jakpost.travel/wimages/large/0-1432_download-samsung-one-ui-background-wallpapers-samsung-one.jpg',
-              }}
+              
             />
-             <Image
+             <IIcon name="stethoscope" size = {this.state.backgroundDisplay} color="rgb(200,200,200)"
               style={{
                 width: '90%',
                 height: '50%',
-                marginLeft:'5%',
+                marginLeft:'18%',
                 marginTop:'5%',
                 position:'absolute',
-                display: this.state.loginDisplay
               }}
               resizeMethod={'scale'}
-              source={{
-                uri: 'https://upload.wikimedia.org/wikipedia/commons/3/36/Medicine_Barnstar_Hires.png',
-              }}
+              source={require('../assets/icons8-stethoscope-64.png')}
             />
           </View>
           <View
@@ -187,7 +185,7 @@ import {
                 marginTop: 10,
                 color: 'white',
               }}
-              label="Sifre"
+              label="Şifre"
               value={this.state.sifre}
               onChangeText={text =>
                 this.setState({ sifre: text, errorPlaceholder: 'white' })
@@ -204,13 +202,11 @@ import {
               }}
             />
             <Button
-              icon={{
-                uri:
-                  'https://cdn2.iconfinder.com/data/icons/ios-7-icons/50/user_male2-512.png',
-              }}
+              icon="account-circle-outline"
+              uppercase={false}
               mode="outlined"
               loading={this.state.loginLoading}
-              onPress={() => this.fetchData3()}
+              onPress={() => console.log('Giriş')}
               color={'black'}
               style={{
                 marginTop: 50,
@@ -219,13 +215,14 @@ import {
                 width: '90%',
                 color: 'black',
               }}>
-              Giris Yap
+              Giriş Yap
             </Button>
             <Button
-              icon={{ uri: 'http://cdn.onlinewebfonts.com/svg/img_202009.png' }}
+              icon="lock"
               mode="outlined"
+              uppercase={false}
               onPress={() =>
-                this.setState({ kayitDisplay: 'flex', loginDisplay: 'none' })
+                this.setState({ kayitDisplay: 'flex', loginDisplay: 'none',backgroundDisplay:0 })
               }
               color={'black'}
               style={{
@@ -235,7 +232,7 @@ import {
                 marginLeft: '5%',
                 width: '90%',
               }}>
-              Kayit Ol
+              Kayıt Ol
             </Button>
           </View>
           <View
@@ -346,7 +343,7 @@ import {
               icon={{ uri: 'http://cdn.onlinewebfonts.com/svg/img_202009.png' }}
               mode="outlined"
               onPress={() =>
-                this.setState({ kayitDisplay: 'flex', loginDisplay: 'flex',loading:true })
+                this.setState({ kayitDisplay: 'flex', loginDisplay: 'flex',loading:true,backgroundDisplay:355 })
               }
               style={{
                 marginTop: 10,

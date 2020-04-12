@@ -1,17 +1,23 @@
 import React, { Component } from 'react'
 import { Text, StyleSheet, View  , SafeAreaView , TextInput , TouchableOpacity } from 'react-native'
-import DataIlac from '../data/DataIlac';
 import IlacRoute from '../components/IlacRoute';
-
+import BgnIlac from '../components/BugunIlac';
+import GcmIlac from '../components/GecmisIlac';
+import ModalScreen from './HatırlatEkle'
+import IlacStore from '../src/store/IlacStore'
+import {observer} from 'mobx-react'
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { observable } from 'mobx';
+const Tab = createMaterialTopTabNavigator();
+const RootStack = createStackNavigator();
+@observer
 export default class HatırlatScreen extends Component {
     state = 
     {
-        Data : DataIlac,
-        allData : DataIlac,
         text : '',
         ara : '',
     }
-  
     searchFilter = text =>
     {
         const newData  = this.state.allData.filter( item => {
@@ -22,26 +28,54 @@ export default class HatırlatScreen extends Component {
             Data:newData,   
         });
     };
-    btnAktif = (text) =>
+    btnAktif = () =>
     {
-        this.setState({ara:text}); 
-
+        //this.setState({ara:this.state.text});
+        IlacStore.setAra(this.state.text);
+        IlacStore.searchFilter();
+        
     }
+    getword = () =>
+    {
+        return this.state.ara;
+    }
+    ayarla = () =>
+    {
+        if(this.state.text.length <= 1 || this.state.text == null )
+        {
+            IlacStore.aranan = '';
+            IlacStore.sifirla();
+            
+        }
+    }
+    /* TabStackScreen = () =>  {
+        return (
+            <Tab.Navigator  >
+            { //initialParams={{ n: IlacStore.getAra() }}
+            }   
+            <Tab.Screen name="Bugün"  component={BgnIlac} />
+            <Tab.Screen name="Geçmiş" component={GcmIlac} />
+            </Tab.Navigator>
+        );
+      }*/
     render() {
         return (
             <SafeAreaView style={styles.aComp}>  
-            <View style={styles.baslik}>
+                <View style={styles.baslik}>
                <Text style={styles.basTxt}>İlaç Hatırlatıcı</Text>
             </View>
             <View style={styles.header}>
-                <TextInput style={styles.txtInp} placeholder="İlaç ismi =>" value={this.state.text} onChangeText={ text => { this.setState({ text:text});} }  placeholderTextColor='rgb(200,200,200)'/>
-                <TouchableOpacity style={styles.btnAra} onPress={ () => this.btnAktif(this.state.text)}>
+                <TextInput style={styles.txtInp} placeholder="İlaç ismi =>" value={this.state.text} onChangeText={ text => { this.setState({ text:text}); this.ayarla();} }  placeholderTextColor='rgb(200,200,200)'/>
+                <TouchableOpacity style={styles.btnAra} onPress={ () => this.btnAktif()}>
                     <Text style={styles.btnTxt}>Ara</Text>
                 </TouchableOpacity>
             </View>
             
             <View style={styles.icerik}>
-            <IlacRoute ara={this.state.ara}/>
+            <RootStack.Navigator mode="modal" headerMode="none">
+                <RootStack.Screen name="Tab" component={IlacRoute} />
+                <RootStack.Screen name="MyModal" component={ModalScreen} />
+            </RootStack.Navigator>
             </View>
            
             </SafeAreaView>
@@ -57,6 +91,7 @@ const styles = StyleSheet.create({
       flexDirection:'column',
       justifyContent:'center',
       alignItems:'center',
+      paddingTop:25,
     },
     baslik:
     {
@@ -69,7 +104,7 @@ const styles = StyleSheet.create({
     },
     basTxt:
     {
-        fontSize:35,
+        fontSize:32,
         // fontFamily:'cursive',
         color:'#fff',
     },
@@ -91,7 +126,9 @@ const styles = StyleSheet.create({
         borderRadius:40,
         fontSize:18,
         width:'60%',
-        paddingLeft:15,
+        paddingVertical:9,
+        paddingHorizontal:30
+        //paddingLeft:15,
     },
     btnAra:
     {

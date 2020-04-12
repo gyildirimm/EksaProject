@@ -33,10 +33,10 @@ class AlternatifLogin extends Component
         </View>
       </View>
       </SafeAreaView>
+      
     )
   }
 }
-
 const styles = StyleSheet.create({
   aComp:
   {

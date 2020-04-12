@@ -1,9 +1,12 @@
 import React, { Component } from 'react'
-import { Text, StyleSheet, View } from 'react-native'
+import { Text, StyleSheet, View , Dimensions} from 'react-native'
 import { CheckBox } from 'react-native-elements';
+const {height : HEIGHT} = Dimensions.get('window');
+const {width : WIDTH} = Dimensions.get('window');
 export default class IlacComp extends Component {
     state = {
         checked:false,
+        boyut: (this.props.ad.length > 8) ? WIDTH/30 : WIDTH/20,
     }
     changeCheck = () =>
     {
@@ -16,7 +19,6 @@ export default class IlacComp extends Component {
             this.setState({checked:true});
         }
     }
-
     aktar = () =>
     {
         if(this.props.kullanım == 'true')
@@ -34,7 +36,7 @@ export default class IlacComp extends Component {
     render() {
         return (
             <View style={styles.aVie}>
-                <Text style={styles.ilac}> {this.props.ad} </Text>
+                <Text style={[styles.ilac , {fontSize:this.state.boyut}]}> {this.props.ad} </Text>
                 <View>
                     <Text style={styles.tarih}> {this.props.tarih} </Text>
                     <Text style={styles.tarih}> {this.props.saat} </Text>
@@ -71,16 +73,18 @@ const styles = StyleSheet.create({
         marginHorizontal:5,
         borderRadius:40,
         marginVertical:9,
+
+        paddingLeft:2,
     },
     tarih:
     {
-        fontSize:19,
+        fontSize:HEIGHT/55,
         textTransform:"capitalize",
         color:'white',
     },
     ilac:
     {
-        fontSize:20,
+        
         textTransform:"capitalize",
         color:'white',
     },
