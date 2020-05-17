@@ -55,8 +55,9 @@ export default class KitleEndeksi extends Component {
             durum = 'Aşırı Obez';
         }
         ideal = 22 / (this.state.boy * this.state.boy);
-        ideal = ideal * 100000;
-        ideal = ideal.toFixed(1);
+        //ideal = ideal * 100000;
+        //ideal = ideal.toFixed(1);
+        ideal = 50 + (0.9) * (this.state.boy - 152.4)
         this.setState({endeks : oran , durum , ideal});
 
     }

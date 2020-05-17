@@ -5,135 +5,104 @@ import { ProgressSteps, ProgressStep } from 'react-native-progress-steps';
 import Card from "../components/Card";
 import DatePicker from 'react-native-datepicker';
 import { SwipeListView } from '@nvthai/react-native-swipe-list-view';
-import { ActivityIndicator,Colors  } from 'react-native-paper';
-
+import { ActivityIndicator, Colors, List } from 'react-native-paper';
 import RNPicker from "rn-modal-picker";
+import { NavigationEvents } from '@react-navigation/drawer';
 
-export class MyCarousel extends React.Component {
+import { observer } from 'mobx-react';
+import { runInAction } from 'mobx';
+import AppointmentStore from '../src/store/AppointmentStore';
+
+
+@observer
+export class Appointment extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      dataSourceHospital: [
-        {
-          id: 1,
-          name: "Lütfi Kıdar Eğitim Araştırma Hastanesi"
-        },
-        {
-          id: 2,
-          name: "Lütfi Kıdar Eğitim Araştırma Hastanesi"
-        },
-        {
-          id: 3,
-          name: "İstanbul Şehir Hastanesi"
-        },
-        {
-          id: 4,
-          name: "Lütfi Kıdar Eğitim Araştırma Hastanesi"
-        },
-        {
-          id: 5,
-          name: "Lütfi Kıdar Eğitim Araştırma Hastanesi"
-        },
-        {
-          id: 6,
-          name: "İstanbul Şehir Hastanesi"
-        }],
-      dataSourceAppointment: [
-        {
-          id: 1,
-          hastane: "Lütfi Kıdar Eğitim Araştırma Hastanesi",
-          bölüm: "Dahiliye",
-          doktor: "Mehmet Uğur Atmaca",
-          şikayet: "Eklem Ağrısı",
-          tarih: "16.07.2019"
-        },
-        {
-          id: 2,
-          hastane: "İstanbul Şehir Hastanesi",
-          bölüm: "Dahiliye",
-          doktor: "Mehmet Uğur Atmaca",
-          şikayet: "Eklem Ağrısı",
-          tarih: "18.03.2019"
-        },
-        {
-          id: 3,
-          hastane: "Bursa Şehir Hastanesi",
-          bölüm: "Dahiliye",
-          doktor: "Mehmet Uğur Atmaca",
-          şikayet: "Eklem Ağrısı",
-          tarih: "16.09.2019"
-        },
-        {
-          id: 4,
-          hastane: "Lütfi Kıdar Eğitim Araştırma Hastanesi",
-          bölüm: "Dahiliye",
-          doktor: "Mehmet Uğur Atmaca",
-          şikayet: "Eklem Ağrısı",
-          tarih: "11.03.2019"
-        },
-        {
-          id: 5,
-          hastane: "Lütfi Kıdar Eğitim Araştırma Hastanesi",
-          bölüm: "Dahiliye",
-          doktor: "Mehmet Uğur Atmaca",
-          şikayet: "Eklem Ağrısı",
-          tarih: "16.07.2020"
-        },
-        {
-          id: 6,
-          hastane: "İstanbul Şehir Hastanesi",
-          bölüm: "Dahiliye",
-          doktor: "Mehmet Uğur Atmaca",
-          şikayet: "Eklem Ağrısı",
-          tarih: "16.07.2015"
-        }],
-      dataSourceCategory: [
-        {
-          id: 1,
-          name: "Dahiliye"
-        },
-        {
-          id: 2,
-          name: "Beyin Cerrahi"
-        }],
       category: null,
       hospital: null,
-      date: null
+      date: null,
+      localTime: null,
+      selected: null
     }
   }
 
   _selectedValueHospital(index, item) {
-    this.setState({ hospital: item.name });
+    AppointmentStore.changeHospitalName(item.name, item.id);
+    AppointmentStore.controlNextStep();
   }
 
   _selectedValueCategory(index, item) {
-    this.setState({ category: item.name });
+    AppointmentStore.changeSectionName(item.name, item.id);
+    AppointmentStore.controlNextStep();
   }
 
-  _swipeValue(e)
-  {
-      if(e.value == 95 || e.value == -95 )
-      {
-        if(e.direction == 'right')
-        {
+  _swipeValue(e) {
+    // console.log(e);
+    if (!AppointmentStore.swipeAppoinment) {
+      if (e.value == 95 || e.value == -95) {
+        if (e.direction == 'right') {
           alert('Randevu Tekrarlanacak !');
+          AppointmentStore.changeHospitalName(e.key.Hname, e.key.HastaneId);
+          AppointmentStore.changeDate(e.key.date);
+          AppointmentStore.changeSectionName(e.key.Sname, e.key.SectionId);
+          AppointmentStore.changeDoctorId(e.key.DoctorId, e.key.Dname);
+          AppointmentStore.changeSwipeAppointment();
+
+          AppointmentStore.getSwipeAppointment();
+          this.props.navigation.navigate('Home');
         }
-        else
-        {
+        else {
           alert('Randevu Bilgilerini Göster !')
         }
       }
+    }
+    else{
+      console.log('Zaten Swipe')
+    }
   }
 
+  _getStyles(id, status) {
+    if (this.state.selected == id && status != false) {
+      return styles.footerButton3
+    }
+    else if (status != false) {
+      return styles.footerButton
+    }
+    else {
+      return styles.footerButton2
+    }
+  }
+
+
+
   render() {
+    if (AppointmentStore.dataState) {
+      return (
+        <ActivityIndicator
+          size='large'
+          animating={AppointmentStore.dataState}
+          color={Colors.black}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        />
+      )
+    }
     return (
       <View style={styles.container}>
         <ProgressSteps>
           {/* ------------------------------------------FIRST------------------------------------------------------------ */}
-          <ProgressStep label="İlk Adım" previousBtnDisabled={'disable'}   >
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 20 }}>Tarih Seçimi Yap !</Text>
+          <ProgressStep label="İlk Adım" previousBtnDisabled={'disable'} nextBtnDisabled={AppointmentStore.nextStepValue} >
+            <View style={{ alignItems: 'flex-start' }}>
+              <Text style={{ fontSize: 17, marginLeft: 10, color: '#353232' }}>  Tarih Seçimi Yap !</Text>
 
               <DatePicker
                 style={{
@@ -142,18 +111,18 @@ export class MyCarousel extends React.Component {
                   fontSize: 50,
                   marginBottom: 30
                 }}
-                date={this.state.date}
+                date={AppointmentStore.selectedDate}
                 mode="date"
-                placeholder="Gidiş Tarihi"
+                placeholder={AppointmentStore.selectedDate}
                 format="YYYY-MM-DD"
-                minDate={this.state.localTime}
+                minDate={AppointmentStore.selectedDate}
                 maxDate="2020-06-01"
                 confirmBtnText="Confirm"
                 cancelBtnText="Cancel"
                 customStyles={{
                   dateIcon: {
                     position: 'absolute',
-                    left: 0,
+                    right: 0,
                     top: 4,
                     marginLeft: 3,
                   },
@@ -161,7 +130,8 @@ export class MyCarousel extends React.Component {
                     borderColor: 'black',
                     borderWidth: 1,
                     borderRadius: 10,
-                    marginLeft: 45,
+                    marginLeft: 5,
+                    marginRight: 40,
                     color: 'black',
                     margin: 10
                   },
@@ -175,12 +145,13 @@ export class MyCarousel extends React.Component {
                 }}
                 onDateChange={date => {
                   this.setState({ date: date });
+                  AppointmentStore.changeDate(date);
                 }}
               />
-              <Text style={{ fontSize: 20 }}>Hastane Seçimi Yap !</Text>
+              <Text style={{ fontSize: 17, marginLeft: 10, color: '#353232' }}>  Hastane Seçimi Yap !</Text>
               <RNPicker
-                dataSource={this.state.dataSourceHospital}
-                dummyDataSource={this.state.dataSourceHospital}
+                dataSource={AppointmentStore.hospitalsData}
+                dummyDataSource={AppointmentStore.hospitalsData}
                 defaultValue={false}
                 pickerTitle={"Hastane"}
                 showSearchBar={true}
@@ -192,18 +163,17 @@ export class MyCarousel extends React.Component {
                 pickerStyle={styles.pickerStyle}
                 itemSeparatorStyle={styles.itemSeparatorStyle}
                 pickerItemTextStyle={styles.listTextViewStyle}
-                selectedLabel={this.state.hospital}
+                selectedLabel={AppointmentStore.selectedHospital}
                 placeHolderLabel={"Hastane Seçiniz !"}
                 selectLabelTextStyle={styles.selectLabelTextStyle}
                 placeHolderTextStyle={styles.placeHolderTextStyle}
                 dropDownImageStyle={styles.dropDownImageStyle}
-                dropDownImage={{ uri: 'https://img.icons8.com/dotty/80/000000/category.png' }}
                 selectedValue={(index, item) => this._selectedValueHospital(index, item)}
               />
-              <Text style={{ fontSize: 20, marginTop: '10%' }}>Bölüm Seçimi Yap !</Text>
+              <Text style={{ fontSize: 17, marginLeft: 10, marginTop: '10%', color: '#353232' }}>  Bölüm Seçimi Yap !</Text>
               <RNPicker
-                dataSource={this.state.dataSourceCategory}
-                dummyDataSource={this.state.dataSourceCategory}
+                dataSource={AppointmentStore.sectionsData}
+                dummyDataSource={AppointmentStore.sectionsData}
                 defaultValue={false}
                 pickerTitle={"Bölüm"}
                 showSearchBar={true}
@@ -215,12 +185,11 @@ export class MyCarousel extends React.Component {
                 pickerStyle={styles.pickerStyle}
                 itemSeparatorStyle={styles.itemSeparatorStyle}
                 pickerItemTextStyle={styles.listTextViewStyle}
-                selectedLabel={this.state.category}
+                selectedLabel={AppointmentStore.selectedSection}
                 placeHolderLabel={"Bölüm Seçiniz !"}
                 selectLabelTextStyle={styles.selectLabelTextStyle}
                 placeHolderTextStyle={styles.placeHolderTextStyle}
                 dropDownImageStyle={styles.dropDownImageStyle}
-                dropDownImage={{ uri: 'https://img.icons8.com/dotty/80/000000/category.png' }}
                 selectedValue={(index, item) => this._selectedValueCategory(index, item)}
               />
             </View>
@@ -230,20 +199,20 @@ export class MyCarousel extends React.Component {
             <SwipeListView
               style={{ marginTop: 10 }}
               useFlatList
-              data={this.state.dataSourceAppointment}
-              onSwipeValueChange={(e)=>{e.isOpen == true ? this._swipeValue(e) : null }}
+              data={AppointmentStore.historyData}
+              onSwipeValueChange={(e) => { e.isOpen == true ? this._swipeValue(e) : null }}
               leftOpenValue={15}
               renderItem={({ item }) => (
                 <View>
                   <View style={styles.rowFront}>
-                    <Text><Text style={{ fontWeight: 'bold' }}>Tarih : </Text>{item.tarih}</Text>
+                    <Text><Text style={{ fontWeight: 'bold' }}>Tarih : </Text>{item.date}</Text>
                   </View>
                   <View style={styles.footer2}>
                     <View style={styles.footerBalance}>
                       <Text style={{ fontSize: 15, fontStyle: 'italic' }}>Hastane : </Text>
                       <View style={styles.balanceContainer}>
                         <Text>
-                          <Text style={styles.currencyValue}>{item.hastane}</Text>
+                          <Text style={styles.currencyValue}>{item.Hname}</Text>
                         </Text>
                       </View>
                     </View>
@@ -251,7 +220,7 @@ export class MyCarousel extends React.Component {
                       <Text style={{ fontSize: 15, fontStyle: 'italic' }}>Bölüm : </Text>
                       <View style={styles.balanceContainer}>
                         <Text>
-                          <Text style={styles.currencyValue}>{item.bölüm}</Text>
+                          <Text style={styles.currencyValue}>{item.Sname}</Text>
                         </Text>
                       </View>
                     </View>
@@ -259,7 +228,7 @@ export class MyCarousel extends React.Component {
                       <Text style={{ fontSize: 15, fontStyle: 'italic' }}>Doktor : </Text>
                       <View style={styles.balanceContainer}>
                         <Text>
-                          <Text style={styles.currencyValue}>{item.doktor}</Text>
+                          <Text style={styles.currencyValue}>{item.Dname}</Text>
                         </Text>
                       </View>
                     </View>
@@ -267,60 +236,55 @@ export class MyCarousel extends React.Component {
                       <Text style={{ fontSize: 15, fontStyle: 'italic' }}>Şikayet : </Text>
                       <View style={styles.balanceContainer}>
                         <Text>
-                          <Text style={styles.currencyValue}>{item.şikayet}</Text>
+                          <Text style={styles.currencyValue}>{item.complaint}</Text>
                         </Text>
                       </View>
                     </View>
-
                   </View>
                 </View>
               )}
-              renderHiddenItem={(data, rowMap) => (
+              keyExtractor={(item) => item}
+              renderHiddenItem={(item) => (
                 <View style={styles.rowBack}>
-                  <TouchableOpacity><Text>Randevu Al </Text></TouchableOpacity>
-                  <TouchableOpacity><Text> Randevu Bilgi  </Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => { this._randevuAl(item) }}><Text>Randevu Al </Text></TouchableOpacity>
+                  <TouchableOpacity><Text> Randevu Bilgi </Text></TouchableOpacity>
                 </View>
               )}
               leftOpenValue={95}
               rightOpenValue={-95}
               stopLeftSwipe={95} stopRightSwipe={-95}
             />
-
           </ProgressStep>
           {/* ------------------------------------------SECOND------------------------------------------------------------ */}
-          <ProgressStep label="İkinci Adım">
+          <ProgressStep label="İkinci Adım" nextBtnDisabled={AppointmentStore.nextStepValueTwo}>
             <View style={{ alignItems: 'center' }}>
               <Text>Doktor Seçimi Yap Ve İlerle !</Text>
               <View style={styles.content}>
-                <ScrollView horizontal style={styles.scroll} contentContainerStyle={styles.innerScroll}>
-                  <View style={styles.spacing}>
-                    <Card />
-                  </View>
-                  <View style={styles.spacing}>
-                    <Card />
-                  </View>
-                  <View style={styles.spacing}>
-                    <Card />
-                  </View>
-                </ScrollView>
+                
+                <FlatList
+                  horizontal style={styles.scroll} contentContainerStyle={styles.innerScroll}
+                  data={AppointmentStore.doctorData}
+                  renderItem={({ item }) =>
+                    <Card name={item.name} title={item.title} surname={item.surname} id={item.id} />
+                  }
+                  keyExtractor={item => item.id}
+                />
+
               </View>
               <View style={styles.footer}>
                 <View style={styles.footerBalance}>
-                  <Text style={styles.myBalance}>Randevu Ücreti</Text>
+                  <Text style={styles.myBalance}>Randevu Saatleri</Text>
                 </View>
                 <FlatList
-                  data={this.state.dataSourceHospital}
+                  numColumns={2}
+                  data={AppointmentStore.loadingData ? null : AppointmentStore.appointmentTimes}
                   renderItem={({ item }) => (
-                    <View style={styles.buttonRow} data-id={1}>
-                      <TouchableOpacity style={styles.footerButton}>
-                        <MaterialCommunityIcons name="clock" size={16} color="#FFF" />
-                        <Text style={styles.footerButtonText}>09:00</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.footerButton}>
-                        <MaterialCommunityIcons name="clock" size={16} color="#FFF" />
-                        <Text style={styles.footerButtonText}>09:00</Text>
-                      </TouchableOpacity>
-                    </View>
+
+                    <TouchableOpacity onPress={() => { item.status ? (this.setState({ selected: item.id }), AppointmentStore.changeSelectedDoctorTimes(item.id, item.startTime)) : alert('Dolu !') }} style={this._getStyles(item.id, item.status)}>
+                      <MaterialCommunityIcons name={item.status ? 'clock' : 'cancel'} size={16} color="#FFF" />
+                      <Text style={styles.footerButtonText}>{item.startTime}</Text>
+                    </TouchableOpacity>
+
                   )}
                   keyExtractor={item => item.id}
                 />
@@ -328,10 +292,60 @@ export class MyCarousel extends React.Component {
             </View>
           </ProgressStep>
           {/* ------------------------------------------THIRD------------------------------------------------------------ */}
-          <ProgressStep label="Üçüncü Adım" onSubmit={()=>{this.props.navigation.navigate('Feed')}}>
+          <ProgressStep label="Üçüncü Adım" onSubmit={() => { AppointmentStore.getSwipeAppointment(); this.props.navigation.navigate('Home') }}>
             <View style={{ alignItems: 'center' }}>
-              <Text>Randevu Detay</Text>
-              <ActivityIndicator animating={true} color={Colors.green400} />
+              <View style={{ width: '100%' }}>
+                <List.Section title="Randevu Özeti">
+                  <List.Accordion
+                    expanded
+                    title="Tarih"
+                    left={props => <List.Icon {...props} icon="calendar-check-outline" />}
+                  >
+                    <View>
+                      <List.Item
+                        title={AppointmentStore.selectedDate}
+                        description="Tarih"
+                        left={props => <List.Icon {...props} icon="calendar-range" />}
+                      />
+                      <List.Item
+                        title={AppointmentStore.selectedHourStirng}
+                        description="Saat"
+                        left={props => <List.Icon {...props} icon="alarm" />}
+                      />
+                    </View>
+                  </List.Accordion>
+
+                  <List.Accordion
+                    title="Hastane - Bölüm"
+                    left={props => <List.Icon {...props} icon="home-city" />}
+                  >
+                    <View style={{ marginLeft: 3 }}>
+                      <List.Item
+                        title={AppointmentStore.selectedHospital}
+                        description="Hastane"
+                        left={props => <List.Icon {...props} icon="home" />}
+                      />
+                      <List.Item
+                        title={AppointmentStore.selectedSection}
+                        description="Bölüm"
+                        left={props => <List.Icon {...props} icon="store-24-hour" />}
+                      />
+                    </View>
+                  </List.Accordion>
+                  <List.Accordion
+                    title="Doktor"
+                    left={props => <List.Icon {...props} icon="account-check" />}
+                  >
+                    <View style={{ marginLeft: 3 }}>
+                      <List.Item
+                        title={AppointmentStore.selectedDoctorName}
+                        description="Doktor"
+                        left={props => <List.Icon {...props} icon="account-circle" />}
+                      />
+                    </View>
+                  </List.Accordion>
+                </List.Section>
+              </View>
             </View>
           </ProgressStep>
         </ProgressSteps>
@@ -341,6 +355,7 @@ export class MyCarousel extends React.Component {
     );
   }
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -375,9 +390,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: "center",
   },
-  spacing: {
-    marginRight: 20,
-  },
   headerButtonText: {
     color: "#000",
     fontSize: 16,
@@ -388,9 +400,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     display: 'flex',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    padding:20,
     backgroundColor: "#FFF",
     shadowColor: "#000",
     shadowOffset: {
@@ -400,7 +410,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 9,
-    borderRadius: 24
+    borderRadius: 24,
+    minWidth:'90%'
   },
   footer2: {
     display: 'flex',
@@ -461,16 +472,49 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
-  },
-  buttonRow: {
-    justifyContent: "space-between",
-    flexDirection: "row",
+    textAlign: 'center'
   },
   footerButton: {
     width: "45%",
     margin: 5,
+    backgroundColor: "gray",
     flexDirection: "row",
-    backgroundColor: "#6248f2",
+    borderRadius: 15,
+    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerButton2: {
+    width: "45%",
+    margin: 5,
+    flexDirection: "row",
+    backgroundColor: "red",
+    borderRadius: 15,
+    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerButton3: {
+    width: "45%",
+    margin: 5,
+    flexDirection: "row",
+    backgroundColor: "green",
     borderRadius: 15,
     paddingVertical: 8,
     shadowColor: "#000",
@@ -492,7 +536,8 @@ const styles = StyleSheet.create({
   myBalance: {
     fontSize: 20,
     color: "#000",
-    fontWeight: "800",
+    fontWeight: "400",
+    textAlign: 'center'
   },
   libraValue: {
     fontSize: 30,
@@ -507,4 +552,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-export default MyCarousel;
+export default Appointment;

@@ -16,9 +16,9 @@ export default class GcmIlac extends Component {
         return (
             <View>
             <FlatList style={styles.flt}
-                data={IlacStore.allPastData}
-                keyExtractor={item => item.ilac_id}
-                renderItem={({item}) => <IlacComp ad={item.ilac_ad} tarih={item.tarih} kullanım={item.Kullanim} saat={item.saat} />}
+                data={IlacStore.gecmisData}
+                keyExtractor={item => item.id}
+                renderItem={({item}) => <IlacComp ad={item.Ilac} id={item.id} tarih={item.start} kullanım={item.used} saat={item.clock} />}
                 />
                  <Button buttonStyle={styles.plsBtn} icon={<Icon name="plus" size={45}/>} onPress={() => {navigation.navigate('MyModal')}} iconContainerStyle={{width:50,backgroundColor:'white'}}/>
                  </View>

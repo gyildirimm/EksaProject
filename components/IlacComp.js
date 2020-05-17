@@ -3,6 +3,9 @@ import { Text, StyleSheet, View , Dimensions} from 'react-native'
 import { CheckBox } from 'react-native-elements';
 const {height : HEIGHT} = Dimensions.get('window');
 const {width : WIDTH} = Dimensions.get('window');
+import {observer} from 'mobx-react';
+
+@observer
 export default class IlacComp extends Component {
     state = {
         checked:false,

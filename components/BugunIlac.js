@@ -5,7 +5,9 @@ import IlacComp from './IlacComp'
 import Icon  from 'react-native-vector-icons/FontAwesome';
 import { Button } from 'react-native-elements';
 import IlacStore from '../src/store/IlacStore';
-import {observer} from 'mobx-react';
+import {observer } from 'mobx-react';
+import {toJS} from 'mobx'
+
 
 @observer
 export default class BgnIlac extends Component {
@@ -13,20 +15,23 @@ export default class BgnIlac extends Component {
     {
         //Data : IlacStore.data, 
         //allData : DataIlac,
-        aranacak : ''
+        aranacak : '',
+        data : [],
     }
 
+    componentDidMount()
+    {
+        
+    }
+    
     render() {
-        /*let{navigaiton , route} = this.props;
-            if(route.params.n[0] != null || route.params.n[0] != '' )
-            {alert(route.params.n[0]);} */
         let {navigation} = this.props;
         return (
             <View>
             <FlatList style={styles.flt}
-                data={IlacStore.data}
-                keyExtractor={item => item.ilac_id}
-                renderItem={({item}) => <IlacComp ad={item.ilac_ad} tarih={item.tarih} kullanım={item.Kullanim} saat={item.saat} />}
+                data={IlacStore.bugunData}
+                keyExtractor={item => item.id}
+                renderItem={({item}) => <IlacComp ad={item.Ilac} id={item.id} tarih={item.start} kullanım={item.used} saat={item.clock} />}
                 />
                 
                  <Button buttonStyle={styles.plsBtn}  icon={<Icon name="plus" size={45}/>} onPress={() => {navigation.navigate('MyModal')}} iconContainerStyle={{width:50,backgroundColor:'white'}}/>          

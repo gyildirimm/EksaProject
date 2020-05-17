@@ -1,27 +1,30 @@
 import {
-    Platform,
-    StyleSheet,
-    Animated,
-    Image,
-    TouchableHighlight,
-    Alert,
-    Dimensions,
-    BackHandler,
-    WebView,
-    FlatList,
-    ActivityIndicator,
-    TouchableOpacity,
-    ImageBackground,
     View,
-    Text,
-    AsyncStorage
+    AsyncStorage,
+    Image,
+    ScrollView
   } from 'react-native';
-  import React from 'react';
+  import React,{Component} from 'react';
   import { Button, TextInput } from 'react-native-paper';
   import IIcon from 'react-native-vector-icons/FontAwesome';
-//import { Icon } from 'react-native-paper/lib/typescript/src/components/Avatar/Avatar';
- 
-  class Account extends React.Component {
+  import LoginStore from '../src/store/LoginStore';
+  import IlacStore from '../src/store/IlacStore';
+  import axios from 'axios';
+import { observer } from 'mobx-react';
+import { runInAction } from 'mobx';
+import Toast, {DURATION} from 'react-native-easy-toast';
+import User from '../models/User';
+import DoctorProfile from '../models/DoctorProfile';
+import { CommonActions} from '@react-navigation/native'
+import * as ImagePicker from 'expo-image-picker';
+import Constants from 'expo-constants';
+import * as Permissions from 'expo-permissions';
+
+
+
+@observer
+export default class Login extends Component 
+  {
     constructor(props) {
       super(props);
       this.state = {
@@ -37,39 +40,99 @@ import {
         newTelephoneNumber:'',
         newPersonalName:'',
         newPersonalSurname:'',
-        backgroundDisplay:355
+        newIdentity:'',
+        newBirthDate:'',
+        newPhoto:'',
+        backgroundDisplay:355,
+        image : null,
+        imgIdentity : ''
       };
     }
- 
-    fetchData3 = () => {
-      this.setState({ loginLoading: true });
-      fetch(
-        'https://www.matmaca.com/api/Users/GetUser?username=' +
-          this.state.kullaniciAdi +
-          '&password=' +
-          this.state.sifre +
-          ''
-      )
-        .then(response => response.json())
-        .then(responseJson => {
-          this.setState({
-            loginLoading: false,
-          });
-          console.log(this.state.kullaniciAdi+this.state.sifre)
-          if (responseJson.length > 0) {
-            this.props.navigation.navigate('Reservation', {
-              username: this.state.kullaniciAdi,
-              password: this.state.sifre,
-            });
-            AsyncStorage.setItem('username',this.state.kullaniciAdi);
- 
-          } else {
-            this.setState({ errorPlaceholder: 'red' });
-          }
+    onPressGiris = ({navigation}) =>
+    {
+      //LoginStore.Login(this.state.kullaniciAdi,this.state.sifre , {navigation});
+      //navigation.navigate("HomeScreen");
+      this.Login();
+    }
+    Login =  () => 
+    {
+      let identity = this.state.kullaniciAdi;
+      let pass = this.state.sifre;
+      //console.log(`http://eksa.ml/api/Home/Login?identity=${identity}&pass=${pass}`);
+      
+      axios.get(`http://matmaca.com/api/Home/Login?identity=${identity}&pass=${pass}`)
+      .then(response => response.data)
+      .then(data => {
+        console.log(data);
+        if(data != null && data != "")
+        {
+          console.log("data => " + data)
+           this._loadData(data);
+           AsyncStorage.setItem('@isLoggin' , '1');
+           AsyncStorage.setItem('@token' , data);
+
+          runInAction(() => {LoginStore.login = true});
+          IlacStore._fillIlac(identity);
+          this.props.navigation.dispatch(
+            CommonActions.reset({
+              index: 1,
+              routes: [
+                { name: 'HomeScreen' },
+              ],
+            })
+          );
+          //this.props.navigation.navigate("HomeScreen");
+        }else
+        {
+          this.refs.toast.show('Girilen bilgiler geçersiz..');
+        }
+      } ,err => {
+        alert("Oops bir hata ile karşılaşıldı..." + err);
+      })
+
+    }
+    _loadData = (data) =>  
+    {
+        //let token = await AsyncStorage.getItem('@token');
+        axios.get(`http://matmaca.com/api/Home/getUser?token=${data}`)
+        .then(res => res.data[0])
+        .then( res => {
+            if(res.id != 0)
+            {
+                let model = new User(res.id , res.isActivity , res.userBirthDate , res.userEmail , res.userIdentityNumber , res.userImageSource , res.userPersonalName , res.userPersonalSurname , res.userPhoneNumber , res.userRol );
+                runInAction( () => { LoginStore.kisi = model; LoginStore.isim = model.getfullName(); LoginStore.rol = model.userRol == 2 ? 'Doktor':'Hasta'; });
+                if(model.userRol == 2)
+                {
+                  this._loadDoctor(model.userIdentityNumber);
+                }
+            }
+        },err=>{
+            alert("Oops bir şeyler ters gitti..")
         })
-        .catch(error => console.log(error));
-    };
- 
+    }
+    _loadDoctor = (identity) =>
+    {
+      console.log("Load Doctor");
+      axios.get(`http://matmaca.com/api/Home/getDoctorP?identity=${identity}`)
+      .then(res => res.data[0])
+      .then( res=>{
+        //constructor( identityNumber ,name , surname , title , section , hospital , adresse , district , province)
+        let model = new DoctorProfile(identity , res.name , res.surname , res.title , res.section , res.hospital , res.adresse , res.district , res.province);
+        runInAction( () => {LoginStore.doctorProfile = model});
+      },err=>{
+        alert("Oops bir şeyler ters gitti..")
+      })
+    }
+    setStorage = async (data) =>
+    {
+      await AsyncStorage.setItem('@isLoggin' , JSON.stringify('1'));
+      await AsyncStorage.setItem('@token' , JSON.stringify(data));
+
+      console.log("Login içerisinde");
+      console.log(AsyncStorage.getItem('@token'));
+      console.log(AsyncStorage.getItem('@isLoggin'));
+    }
+
     validateEmail = () => {
     var re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d$&+,:;=?@#|'<>.^*()%!-]{8,}$/;
       if(!re.test(this.state.newPassword))
@@ -79,6 +142,100 @@ import {
       }
   };
  
+
+   signIn = () => 
+   {
+     this.setState({ loginLoading: true });
+     let gidecekImgname;
+     if(this.state.image != null)
+     {
+       gidecekImgname= this.state.newIdentity.toString() + ".jpg";
+     }else{
+      gidecekImgname = "person.png"
+     }
+     console.log(`http://matmaca.com/api/Home/addUser?userIdentityNumber=${this.state.newIdentity}&userPersonalName=${this.state.newPersonalName}&userPersonalSurname=${this.state.newPersonalSurname}&userPhoneNumber=${this.state.newTelephoneNumber}&userEmail=${this.state.newMailAdress}&userBirthDate=${this.state.newBirthDate}&userPassword=${this.state.newPassword}&userImageSource=${gidecekImgname}`)
+      axios.get(`http://matmaca.com/api/Home/addUser?userIdentityNumber=${this.state.newIdentity}&userPersonalName=${this.state.newPersonalName}&userPersonalSurname=${this.state.newPersonalSurname}&userPhoneNumber=${this.state.newTelephoneNumber}&userEmail=${this.state.newMailAdress}&userBirthDate=${this.state.newBirthDate}&userPassword=${this.state.newPassword}&userImageSource=${gidecekImgname}`)
+      .then(res => res.data)
+      .then(res => {
+        if(res)
+        {
+          this.refs.toast.show('Kayıt Başarılı');
+          this.setState({
+            kullaniciAdi: '',
+            sifre:'',
+            imgIdentity:this.state.newIdentity,
+            newMailAdress:'',
+            newPassword:'',
+            newPersonalName:'',
+            newPersonalSurname:'',
+            newTelephoneNumber:'',
+            newIdentity:'',
+            newBirthDate:'',
+            newPhoto:'',
+            kayitDisplay:'none',
+            loginDisplay:'flex',
+            loginLoading:false,
+            backgroundDisplay:355
+          });
+          if(this.state.image != null)
+          {
+            console.log("girdi")
+            this.uploadImage(this.state.image);
+            
+          }
+         
+        }else
+        {
+          this.refs.toast.show('Kayıt Başarısız.Kimlik Numaranızı kontrol ediniz...');
+        }
+
+        
+      }, err => {
+        alert("Oops bir hata ile karşılaşıldı..." + err);
+      })
+   }
+   uploadImage = (image_uri) => {
+
+
+    try {
+        // var myHeaders = new Headers();
+        // myHeaders.append("Content-Type", "multipart/form-data; boundary=--------------------------984885506527086886394027");
+
+
+        var formdata = new FormData();
+        //let imgname= LoginStore.kisi.userIdentityNumber + ".jpg"
+        let imgname = this.state.imgIdentity.toString() + ".jpg"
+        formdata.append('Files', { type: 'image/jpg', uri: image_uri, name: imgname })
+
+        var requestOptions = {
+            method: 'POST',
+            // headers: myHeaders,
+            body: formdata,
+            redirect: 'follow'
+        };
+
+        this.setState({loading:true})
+
+        fetch("https://www.matmaca.com/api/home/upload", requestOptions)
+            .then(response => {
+                this.setState({loading:false})
+                if (response.text() == "false") {
+                    alert('Başarısız !');
+                }
+                else if(response.text() == "true") {
+                    alert('Başarılı !');
+                }
+                else
+                {
+                    console.log(response.text());
+                }
+            })
+            .then(result => console.log(result))
+            .catch(error => console.log('error', error));
+    } catch (error) {
+        console.log(error);
+    }
+}
    fetchData4 = (text) => {
      this.setState({ loginLoading: true });
      if(this.state.newPersonalName != "" && this.state.newPersonalSurname != "")
@@ -128,8 +285,41 @@ import {
           this.setState({ loginLoading: false });
       }
   }
- 
+
+  getPermissionAsync = async () => {
+    if (Constants.platform.ios) {
+      const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+      }else
+      {
+        this._pickImage();
+      }
+    }else{
+      this._pickImage();
+    }
+  };
+
+  _pickImage = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+      if (!result.cancelled) {
+        this.setState({ image: result.uri });
+      }
+
+      console.log(result);
+    } catch (E) {
+      console.log(E);
+    }
+  };
+
     render() {
+      let {navigation} = this.props;
       return (
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
           <View style={{ width: '100%', height: '100%', position: 'absolute' }}>
@@ -206,7 +396,7 @@ import {
               uppercase={false}
               mode="outlined"
               loading={this.state.loginLoading}
-              onPress={() => console.log('Giriş')}
+              onPress={() => { this.onPressGiris({navigation});}}
               color={'black'}
               style={{
                 marginTop: 50,
@@ -239,68 +429,19 @@ import {
             style={{
               width: '100%',
               height: '100%',
-              marginBottom: '60%',
+             
               marginTop: '3%',
               display: this.state.kayitDisplay,
               paddingLeft:20,
-              opacity:10
+              paddingRight:20,
+              opacity:10,
+           
             }}>
-            <TextInput
-              label="Username"
-              mode="flat"
-              style={{ backgroundColor: 'transparent',borderRadius:15,opacity:5,marginTop:10 }}
-              selectionColor="white"
-              underlineColor="white"
-              value={this.state.newUsername}
-              onChangeText={text => this.setState({ newUsername: text })}
-              theme={{
-                colors: { text: 'white', placeholder: 'white', primary: 'white' },
-              }}
-            />
+              <ScrollView style={{flex:1}}>
             <TextInput
               mode="flat"
-               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:15,opacity:5 }}
-              label="Password"
-              secureTextEntry={true}
-              value={this.state.newPassword}
-              onChangeText={text => this.setState({ newPassword: text })}
-              onBlur={() => {
-                this.validateEmail();
-              }}
-              selectionColor="white"
-              underlineColor="white"
-              theme={{
-                colors: { text: 'white', placeholder: 'white', primary: 'white' },
-              }}
-            />
-            <TextInput
-              label="E-Mail"
-              mode="flat"
-               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:15,opacity:5 }}
-              selectionColor="white"
-              underlineColor="white"
-              value={this.state.newMailAdress}
-              onChangeText={text => this.setState({ newMailAdress: text })}
-              theme={{
-                colors: { text: 'white', placeholder: 'white', primary: 'white' },
-              }}
-            />
-            <TextInput
-              mode="flat"
-               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:15,opacity:5 }}
-              label="Phone Number"
-              value={this.state.newTelephoneNumber}
-              onChangeText={text => this.setState({ newTelephoneNumber: text })}
-              selectionColor="white"
-              underlineColor="white"
-              theme={{
-                colors: { text: 'white', placeholder: 'white', primary: 'white' },
-              }}
-            />
-              <TextInput
-              mode="flat"
-               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:15,opacity:5 }}
-              label="Personal Name"
+               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:10,opacity:5 }}
+              label="Adınız"
               value={this.state.newPersonalName}
               onChangeText={text => this.setState({ newPersonalName: text })}
               selectionColor="white"
@@ -311,8 +452,8 @@ import {
             />
              <TextInput
               mode="flat"
-               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:15,opacity:5 }}
-              label="Personal Surname"
+               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:10,opacity:5 }}
+              label="Soyadınız"
               value={this.state.newPersonalSurname}
               onChangeText={text => this.setState({ newPersonalSurname: text })}
               selectionColor="white"
@@ -321,14 +462,60 @@ import {
                 colors: { text: 'white', placeholder: 'white', primary: 'white' },
               }}
             />
-            <Button
-              icon={{
-                uri:
-                  'https://cdn2.iconfinder.com/data/icons/ios-7-icons/50/user_male2-512.png',
+            
+            <TextInput
+              label="Kimlik Numaranız"
+              mode="flat"
+              style={{ backgroundColor: 'transparent',borderRadius:15,opacity:5,marginTop:10 }}
+              selectionColor="white"
+              underlineColor="white"
+              value={this.state.newIdentity}
+              onChangeText={text => this.setState({ newIdentity: text })}
+              theme={{
+                colors: { text: 'white', placeholder: 'white', primary: 'white' },
               }}
-              loading={this.state.loginLoading}
+            />
+               
+            <TextInput
+              label="E-Mail"
+              mode="flat"
+               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:10,opacity:5 }}
+              selectionColor="white"
+              underlineColor="white"
+              value={this.state.newMailAdress}
+              onChangeText={text => this.setState({ newMailAdress: text })}
+              theme={{
+                colors: { text: 'white', placeholder: 'white', primary: 'white' },
+              }}
+            />
+            <TextInput
+              mode="flat"
+               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:10,opacity:5 }}
+              label="Telefon Numarası"
+              value={this.state.newTelephoneNumber}
+              onChangeText={text => this.setState({ newTelephoneNumber: text })}
+              selectionColor="white"
+              underlineColor="white"
+              theme={{
+                colors: { text: 'white', placeholder: 'white', primary: 'white' },
+              }}
+            />
+            <TextInput
+              mode="flat"
+               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:10,opacity:5 }}
+              label="Doğum Tarihi"
+              value={this.state.newBirthDate}
+              onChangeText={text => this.setState({ newBirthDate: text })}
+              selectionColor="white"
+              underlineColor="white"
+              theme={{
+                colors: { text: 'white', placeholder: 'white', primary: 'white' },
+              }}
+            />
+              <Button
+              icon="folder-account"
               mode="outlined"
-              onPress={() => this.fetchData4('')}
+              onPress={this._pickImage}
               color={'black'}
               style={{
                 marginTop: 50,
@@ -336,11 +523,41 @@ import {
                 color: 'black',
                 marginRight:'5%'
               }}>
-              Kayit Ol
+              Fotoğraf Seç
+            </Button>
+            {this.state.image && <Image source={{ uri: this.state.image }} style={{ width: 100, height: 100  , marginLeft:'35%' , marginTop:'2%'}} />}
+            <TextInput
+              mode="flat"
+               style={{ backgroundColor: 'transparent',borderRadius:15,marginTop:10,opacity:5 }}
+              label="Şifre"
+              secureTextEntry={true}
+              value={this.state.newPassword}
+              onChangeText={text => this.setState({ newPassword: text })}
+              selectionColor="white"
+              underlineColor="white"
+              theme={{
+                colors: { text: 'white', placeholder: 'white', primary: 'white' },
+              }}
+            />
+            
+              
+            <Button
+              icon="lock"
+              loading={this.state.loginLoading}
+              mode="outlined"
+              onPress={() => {this.signIn()}}
+              color={'black'}
+              style={{
+                marginTop: 50,
+                backgroundColor: 'white',
+                color: 'black',
+                marginRight:'5%'
+              }}>
+              Kayıt Ol
             </Button>
              <Button
               color={'black'}
-              icon={{ uri: 'http://cdn.onlinewebfonts.com/svg/img_202009.png' }}
+              icon="account-circle-outline"
               mode="outlined"
               onPress={() =>
                 this.setState({ kayitDisplay: 'flex', loginDisplay: 'flex',loading:true,backgroundDisplay:355 })
@@ -351,12 +568,13 @@ import {
                 color: 'black',
                 marginRight:'5%'
               }}>
-              Giris Yap
+              Giriş Yap
             </Button>
+            </ScrollView>
           </View>
+          <Toast ref="toast"/>
         </View>
       );
     }
   }
  
-  export default Account;
